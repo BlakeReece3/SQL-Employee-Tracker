@@ -94,3 +94,108 @@ const questions = [
     }
   }
 
+  function viewDepartments() {
+    const data = `SELECT * FROM department`;
+    return new Promise((resolve, reject) => {
+      db.query(data, (err, res) => {
+        if (err) {
+          reject(err);
+        } else {
+          console.table(res);
+          resolve();
+        }
+      });
+    });
+  }
+
+  function viewRoles() {
+    const data = `SELECT role.id, role.title, department.name AS department, role.salary FROM role JOIN department ON role.department_id = department.id;`;
+    return new Promise((resolve, reject) => {
+      db.query(data, (err, res) => {
+        if (err) {
+          reject(err);
+        } else {
+          console.table(res);
+          resolve();
+        }
+      });
+    });
+  }
+
+function viewEmployees() {
+    const data = `SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, manager.first_name FROM employee JOIN role ON employee.role_id = role.id JOIN department ON role.department_id = department.id LEFT JOIN employee manager ON employee.manager_id = manager.id`;
+    return new Promise((resolve, reject) => {
+        db.query(data, (err, res) => {
+            if (err) {
+                reject(err);
+            } else {
+                console.table(res);
+                resolve();
+            }
+        });
+    });
+}
+
+function addDepartment() {
+    return inquirer.prompt([
+        {
+            name: 'department',
+            type: 'input',
+            message: 'What is the name of the department?',
+        },
+    ])
+        .then((answer) => {
+            const data = `INSERT INTO department (name) VALUES (?)`;
+            db.query(data, answer.department, (err, res) => {
+                if (err) throw err;
+                console.log('Department added.');
+                init();
+            });
+        }
+        );
+}
+
+function addRole() {
+    const data = `SELECT * FROM department`;
+    return new Promise((resolve, reject) => {
+        db.query(data, (err, res) => {
+            if (err) {
+                reject(err);
+            } else {
+                const departments = res.map((department) => {
+                    return {
+                        name: department.name,
+                        value: department.id,
+                    };
+                });
+                inquirer.prompt([
+                    {
+                        name: 'role',
+                        type: 'input',
+                        message: 'What is the name of the role?',
+                    },
+                    {
+                        name: 'salary',
+                        type: 'input',
+                        message: 'What is the salary of the role?',
+                    },
+                    {
+                        name: 'department',
+                        type: 'list',
+                        message: 'What department does the role belong to?',
+                        choices: departments,
+                    },
+                ])
+                    .then((answer) => {
+                        const data = `INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)`;
+                        db.query(data, [answer.role, answer.salary, answer.department], (err, res) => {
+                            if (err) throw err;
+                            console.log('Role added.');
+                            init();
+                        });
+                    }
+                    );
+            }
+        });
+    });
+}
